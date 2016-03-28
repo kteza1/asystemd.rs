@@ -25,7 +25,7 @@ fn iterator_test() {
         }
     };
     let mut count = 0;
-    for (journal, cursor) in client {
+    for (_, _) in client {
         count += 1;
         println!("{:?}", count);
     }

@@ -163,7 +163,15 @@ impl Iterator for Journal {
     type Item = (JournalRecord, String);
 
     fn next(&mut self) -> Option<(JournalRecord, String)> {
-        let next_record = self.next_record().unwrap();
+        let next_record = match self.next_record() {
+            Ok(r) => r,
+            Err(_) => {
+                error!("error reading a journal entry. adding dummy entry");
+                let mut dummy_tree = BTreeMap::new();
+                dummy_tree.insert("Dummy".to_string(), "Dummy".to_string());
+                Some(dummy_tree)
+            }
+        };
         let wait_time: u64 = 1 << 63;
         let cursor = match self.cursor() {
             Ok(c) => c,
