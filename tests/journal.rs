@@ -17,7 +17,7 @@ fn test() {
 
 #[test]
 fn iterator_test() {
-    let mut client = match Journal::open(JournalFiles::All, true, true) {
+    let mut client = match Journal::open(JournalFiles::All, false, true) {
         Ok(c) => c,
         Err(e) => {
             println!("Error opening");
@@ -25,8 +25,9 @@ fn iterator_test() {
         }
     };
     let mut count = 0;
-    for (_, _) in client {
+    for (j, c) in client {
         count += 1;
-        println!("{:?}", count);
+        println!("{:?}. {:?}", count, j);
+        println!("");
     }
 }

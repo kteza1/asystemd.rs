@@ -172,14 +172,13 @@ impl Iterator for Journal {
                 Some(dummy_tree)
             }
         };
-        let wait_time: u64 = 1 << 63;
-        let cursor = match self.cursor() {
-            Ok(c) => c,
-            Err(_) => return None,
-        };
 
+        let wait_time: u64 = 1 << 63;
         match next_record {
-            Some(record) => Some((record, cursor)),
+            Some(record) => {
+                let cursor = self.cursor().unwrap();
+                Some((record, cursor))
+            }
             None => {
                 let wait_time: u64 = 1 << 63;
                 let w_ret: i32;
@@ -188,6 +187,9 @@ impl Iterator for Journal {
                 }
                 if w_ret <= 0 {
                     None
+                } else if w_ret == 2 {
+                    println!("Journal invalidate ... Rotation or new files");
+                    self.next()
                 } else {
                     self.next()
                 }
