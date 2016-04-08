@@ -25,7 +25,7 @@ fn iterator_test() {
         }
     };
     let mut count = 0;
-    for (j, c) in client {
+    for (j, c) in &client {
         count += 1;
         println!("{:?}. {:?}", count, j);
         println!("");

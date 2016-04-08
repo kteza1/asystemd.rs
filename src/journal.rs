@@ -159,7 +159,8 @@ impl Journal {
     }
 }
 
-impl Iterator for Journal {
+
+impl<'a> Iterator for &'a Journal {
     type Item = (JournalRecord, String);
 
     fn next(&mut self) -> Option<(JournalRecord, String)> {
