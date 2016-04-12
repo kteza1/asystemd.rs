@@ -24,6 +24,7 @@ fn iterator_test() {
             panic!("Couldn't create client. Error = {:?}", e);
         }
     };
+    client.set_iterator_timeout(10);
     let mut count = 0;
     for (j, c) in &client {
         count += 1;

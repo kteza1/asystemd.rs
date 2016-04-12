@@ -61,6 +61,7 @@ pub type JournalRecord = BTreeMap<String, String>;
 /// Supports read, next, previous, and seek operations.
 pub struct Journal {
     j: ffi::sd_journal,
+    wait_time: u64,
 }
 
 /// Represents the set of journal files to read.
@@ -100,10 +101,17 @@ impl Journal {
             JournalFiles::All => 0,
         };
 
-        let journal = Journal { j: ptr::null_mut() };
+        let journal = Journal {
+            j: ptr::null_mut(),
+            wait_time: 1 << 63, // wait for infinite time
+        };
         sd_try!(ffi::sd_journal_open(&journal.j, flags));
         sd_try!(ffi::sd_journal_seek_head(journal.j));
         Ok(journal)
+    }
+
+    pub fn set_iterator_timeout(&mut self, timeout: u64) {
+        self.wait_time = timeout * 1000000;
     }
 
     /// Read the next record from the journal. Returns `io::EndOfFile` if there
@@ -174,17 +182,16 @@ impl<'a> Iterator for &'a Journal {
             }
         };
 
-        let wait_time: u64 = 1 << 63;
+        // let wait_time: u64 = 1 << 63;
         match next_record {
             Some(record) => {
                 let cursor = self.cursor().unwrap();
                 Some((record, cursor))
             }
             None => {
-                let wait_time: u64 = 1 << 63;
                 let w_ret: i32;
                 unsafe {
-                    w_ret = ffi::sd_journal_wait(self.j, wait_time);
+                    w_ret = ffi::sd_journal_wait(self.j, self.wait_time);
                 }
                 if w_ret <= 0 {
                     None
