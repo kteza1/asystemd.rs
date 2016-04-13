@@ -165,6 +165,12 @@ impl Journal {
         sd_try!(ffi::sd_journal_seek_cursor(self.j, c_position.unwrap().as_ptr() as *const _));
         Ok(())
     }
+
+    pub fn get_realtime_us(&self) -> Result<u64> {
+        let mut timestamp_us = 0;
+        sd_try!(ffi::sd_journal_get_realtime_usec(self.j, &mut timestamp_us));
+        Ok(timestamp_us)
+    }
 }
 
 

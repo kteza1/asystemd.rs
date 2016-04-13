@@ -29,6 +29,7 @@ fn iterator_test() {
     for (j, c) in &client {
         count += 1;
         println!("{:?}. {:?}", count, j);
+        println!("time stamp = {:?}", client.get_realtime_us());
         println!("");
     }
 }
