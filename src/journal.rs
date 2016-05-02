@@ -1,10 +1,18 @@
 use libc::{self, free, c_int, c_char, size_t};
 use std::ffi::{CString, CStr};
 use log::{self, Log, LogRecord, LogLocation, SetLoggerError};
-use std::{fmt, ptr, result};
+use std::{self, fmt, ptr, result};
 use std::collections::BTreeMap;
 use ffi;
 use super::Result;
+
+#[derive(PartialEq)]
+
+
+pub enum SeekRet {
+    SeekSuccess,
+    ClosestSeek,
+}
 
 /// Send preformatted fields to systemd.
 ///
@@ -156,14 +164,25 @@ impl Journal {
         Ok(cursor)
     }
 
-    pub fn seek<S>(&self, cursor: S) -> Result<()>
+    pub fn seek<S>(&self, cursor: S) -> Result<SeekRet>
         where S: Into<String>
     {
         let c_position = CString::new(cursor.into());
         // If no entry matching the specified cursor is found the call will seek to
         // the next closest entry (in terms of time) instead
-        sd_try!(ffi::sd_journal_seek_cursor(self.j, c_position.unwrap().as_ptr() as *const _));
-        Ok(())
+        sd_try!(ffi::sd_journal_seek_cursor(self.j,
+                                            c_position.clone().unwrap().as_ptr() as *const _));
+
+        Ok(SeekRet::SeekSuccess)
+
+        // TODO: Test why sd_journal_test_cursor is failing here
+
+        // match sd_try!(ffi::sd_journal_test_cursor(self.j,
+        //                                           c_position.unwrap().as_ptr() as *const _)) {
+        //     0 => Ok(SeekRet::ClosestSeek),
+        //     e if e > 0 => Ok(SeekRet::SeekSuccess),
+        //     e => Err(std::io::Error::from_raw_os_error(-e)),
+        // }
     }
 
     pub fn get_realtime_us(&self) -> Result<u64> {
@@ -196,12 +215,15 @@ impl<'a> Iterator for &'a Journal {
             }
             None => {
                 let w_ret: i32;
+                // TODO: https://github.com/sofar/tallow/blob/b81b4404955997801eae4b8fe6799f5b59e7728c/tallow.c#L349-L353
+                // Do we need to seek to tail if INVALIDATE happens ??
                 unsafe {
                     w_ret = ffi::sd_journal_wait(self.j, self.wait_time);
                 }
                 if w_ret <= 0 {
                     None
                 } else if w_ret == 2 {
+                    // TODO: Hitting this condition when there are no more journals to read
                     println!("Journal invalidate ... Rotation or new files");
                     self.next()
                 } else {
